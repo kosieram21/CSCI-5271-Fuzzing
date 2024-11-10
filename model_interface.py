@@ -13,14 +13,16 @@ writePipe = open(FIFO_PY_TO_C, 'w')
 processing = True
 
 while processing:
-    command = readPipe.readline()
+    command = readPipe.readline().strip()
 
     if command == 'GenerateMutation':
         print('mutating...')
         output = "abcd1234"
         outputSize = str(len(output)).zfill(10)
         writePipe.write(outputSize)
+        writePipe.flush()
         writePipe.write(output)
+        writePipe.flush()
     elif command == 'UpdateModel':
         print('updating...')
         code_coverage = readPipe.readline()
