@@ -12,7 +12,9 @@ int main() {
         return -1;
     }
 
+    printf("PRE");
     printf("%.*s\n", outputSize, output);
+    printf("POST");
 
     int codeCoverage = 100;
     if (UpdateModel(&interface, codeCoverage)) {

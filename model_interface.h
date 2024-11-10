@@ -75,8 +75,8 @@ int UpdateModel(ModelInterface* interface, int codeCoverage) {
 
     write(interface->writePipe, "UpdateModel\n", 12);
     
-    char buffer[10];
-    snprintf(buffer, sizeof(buffer), "%d", codeCoverage);
+    char buffer[11];
+    snprintf(buffer, sizeof(buffer), "%d\n", codeCoverage);
     write(interface->writePipe, buffer, sizeof(buffer));
 
     char errorBuffer;
