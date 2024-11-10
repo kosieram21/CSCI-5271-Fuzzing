@@ -34,3 +34,4 @@ while processing:
         processing = False
     else:
         print(f'{command} is an invalid command')
+        processing = False
