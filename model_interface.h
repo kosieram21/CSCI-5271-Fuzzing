@@ -66,7 +66,7 @@ int UpdateModel(ModelInterface* interface, int codeCoverage) {
     write(interface->writePipe, "UpdateModel\n", 12);
     
     char buffer[10];
-    itoa(codeCoverage, buffer, 10);
+    snprintf(buffer, sizeof(buffer), "%d", codeCoverage);
     write(interface->writePipe, buffer, sizeof(buffer));
 
     return 0;
