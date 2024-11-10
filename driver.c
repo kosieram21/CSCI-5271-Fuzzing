@@ -12,7 +12,10 @@ int main() {
         return -1;
     }
 
-    if (UpdateModel(&interface)) {
+    printf("%.*s\n", outputSize, output);
+
+    int codeCoverage = 100
+    if (UpdateModel(&interface, codeCoverage)) {
         return -1;
     }
 

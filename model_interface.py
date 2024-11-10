@@ -19,7 +19,9 @@ while processing:
     elif command == 'UpdateModel':
         print('updating...')
         code_coverage = readPipe.readline()
+        print(code_coverage)
     elif command == 'Close':
+        print('closing...')
         readPipe.close()
         writePipe.close()
         processing = False
