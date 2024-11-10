@@ -33,4 +33,4 @@ while processing:
         writePipe.close()
         processing = False
     else:
-        print('Invalid Command')
+        print(f'{command} is an invalid command')
