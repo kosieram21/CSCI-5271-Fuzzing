@@ -3,6 +3,11 @@ import os
 FIFO_C_TO_PY = 'c_to_py_fifo'
 FIFO_PY_TO_C = 'py_to_c_fifo'
 
+if not os.path.exists(FIFO_C_TO_PY):
+    os.mkfifo(FIFO_C_TO_PY)
+if not os.path.exists(FIFO_PY_TO_C):
+    os.mkfifo(FIFO_PY_TO_C)
+
 readPipe = open(FIFO_C_TO_PY, 'r')
 writePipe = open(FIFO_PY_TO_C, 'w')
 processing = True
