@@ -1,5 +1,9 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define FIFO_C_TO_PY "c_to_py_fifo"
 #define FIFO_PY_TO_C "py_to_c_fifo"
@@ -47,7 +51,8 @@ int GenerateMutation(ModelInterface* interface, char** output, int* outputSize) 
     char buffer[10];
     read(interface->readPipe, buffer, sizeof(buffer));
 
-    outputSize = &atoi(buffer);
+    int tmp = atoi(buffer);
+    outputSize = &tmp;
     read(interface->readPipe, *output, *outputSize);
 
     return 0;

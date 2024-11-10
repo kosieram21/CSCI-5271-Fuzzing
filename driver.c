@@ -14,12 +14,12 @@ int main() {
 
     printf("%.*s\n", outputSize, output);
 
-    int codeCoverage = 100
+    int codeCoverage = 100;
     if (UpdateModel(&interface, codeCoverage)) {
         return -1;
     }
 
-    if (CloseInterface(&interace)) {
+    if (CloseInterface(&interface)) {
         return -1;
     }
     
