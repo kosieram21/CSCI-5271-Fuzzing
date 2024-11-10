@@ -36,7 +36,7 @@ int CloseInterface(ModelInterface* interface) {
     write(interface->writePipe, "Close\n", 6);
 
     char errorBuffer;
-    read(interface->readPipe, &error, 1);
+    read(interface->readPipe, &errorBuffer, 1);
     int error = atoi(&errorBuffer);
     if (error) {
         return error;
