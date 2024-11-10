@@ -23,12 +23,18 @@ while processing:
         writePipe.flush()
         writePipe.write(output)
         writePipe.flush()
+        writePipe.write(0)
+        writePipe.flush()
     elif command == 'UpdateModel':
         print('updating...')
         code_coverage = readPipe.readline()
-        print(code_coverage)
+        print(f'code coverage: {code_coverage}')
+        writePipe.write(0)
+        writePipe.flush()
     elif command == 'Close':
         print('closing...')
+        writePipe.write(0)
+        writePipe.flush()
         readPipe.close()
         writePipe.close()
         processing = False

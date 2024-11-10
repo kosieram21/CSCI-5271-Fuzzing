@@ -35,6 +35,12 @@ int CloseInterface(ModelInterface* interface) {
 
     write(interface->writePipe, "Close\n", 6);
 
+    char error;
+    read(interface->readPipe);
+    if (error) {
+        return error;
+    }
+
     close(interface->writePipe);
     close(interface->readPipe);
 
@@ -55,7 +61,10 @@ int GenerateMutation(ModelInterface* interface, char** output, int* outputSize) 
     outputSize = &tmp;
     read(interface->readPipe, *output, *outputSize);
 
-    return 0;
+    char error;
+    read(interface->readPipe);
+
+    return error;
 }
 
 int UpdateModel(ModelInterface* interface, int codeCoverage) {
@@ -69,5 +78,8 @@ int UpdateModel(ModelInterface* interface, int codeCoverage) {
     snprintf(buffer, sizeof(buffer), "%d", codeCoverage);
     write(interface->writePipe, buffer, sizeof(buffer));
 
-    return 0;
+    char error;
+    read(interface->readPipe);
+
+    return error;
 }
