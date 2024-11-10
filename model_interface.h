@@ -1,11 +1,68 @@
 #include <unistd.h>
+#include <stdlib.h>
+
+#define FIFO_C_TO_PY "c_to_py_fifo"
+#define FIFO_PY_TO_C "py_to_c_fifo"
 
 typedef struct {
-    int writePipe[2];
-    int readPip[2];
+    int writePipe;
+    int readPipe;
 
 } ModelInterface;
 
-int InitializeInterface(ModelInterface* interface) {
+int OpenInterface(ModelInterface* interface) {
+    if (interface == NULL) {
+        return -1;
+    }
 
+    mkfifo(FIFO_C_TO_PY, 0666);
+    mkfifo(FIFO_PY_TO_C, 0666);
+
+    interface->writePipe = open(FIFO_C_TO_PY, O_WRONLY);
+    interface->readPipe = open(FIFO_PY_TO_C, O_RDONLY);
+
+    return 0;
+}
+
+int CloseInterface(ModelInterface* interface) {
+    if (interface == NULL) {
+        return -1;
+    }
+
+    write(interface->writePipe, "Close\n", 6);
+
+    close(interface->writePipe);
+    close(interface->readPipe);
+
+    return 0;
+}
+
+int GenerateMutation(ModelInterface* interface, char** output, int* outputSize) {
+    if (interface == NULL) {
+        return -1;
+    }
+
+    write(interface->writePipe, "GenerateMutation\n", 17);
+    
+    char buffer[10];
+    read(interface->readPipe, buffer, sizeof(buffer));
+
+    outputSize = &atoi(buffer);
+    read(interface->readPipe, *output, *outputSize);
+
+    return 0;
+}
+
+int UpdateModel(ModelInterface* interface, int codeCoverage) {
+    if (interface == NULL) {
+        return -1;
+    }
+
+    write(interface->writePipe, "UpdateModel\n", 12);
+    
+    char buffer[10];
+    itoa(codeCoverage, buffer, 10);
+    write(interface->writePipe, buffer, sizeof(buffer));
+
+    return 0;
 }
