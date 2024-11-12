@@ -11,16 +11,58 @@
 typedef struct {
     int writePipe;
     int readPipe;
-
 } ModelInterface;
 
-int OpenInterface(ModelInterface* interface) {
+int SendCommand(const ModelInterface* const interface, const char* const payload, const unsigned int payloadSize) 
+{
     if (interface == NULL) {
         return -1;
     }
 
-    mkfifo(FIFO_C_TO_PY, 0666);
-    mkfifo(FIFO_PY_TO_C, 0666);
+    const char header[4] = { payloadSize >> 24, payloadSize >> 16, payloadSize >> 8, payloadSize };
+
+    if (write(interface->writePipe, header, sizeof(header))) {
+        return -1;
+    }
+
+    if (write(interface->writePipe, payload, payloadSize)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int ReceiveResponse(const ModelInterface* const interface, char** payload, unsigned int* payloadSize) {
+    if (interface == NULL) {
+        return -1;
+    }
+
+    char header[4];
+    if (read(interface->readPipe, header, sizeof(header))) {
+        return -1;
+    }
+
+    *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
+
+    if (read(interface->readPipe, &payload, &payloadSize)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int OpenInterface(const ModelInterface* interface) {
+    if (interface == NULL) {
+        return -1;
+    }
+
+    if (mkfifo(FIFO_C_TO_PY, 0666)) {
+        return -1;
+    }
+
+    if (mkfifo(FIFO_PY_TO_C, 0666)) {
+        return -1;
+    }
 
     interface->writePipe = open(FIFO_C_TO_PY, O_WRONLY);
     interface->readPipe = open(FIFO_PY_TO_C, O_RDONLY);
@@ -28,27 +70,61 @@ int OpenInterface(ModelInterface* interface) {
     return 0;
 }
 
-int CloseInterface(ModelInterface* interface) {
+int CloseInterface(const ModelInterface* interface) {
     if (interface == NULL) {
         return -1;
     }
 
-    write(interface->writePipe, "Close\n", 6);
-
-    char errorBuffer;
-    read(interface->readPipe, &errorBuffer, 1);
-    int error = atoi(&errorBuffer);
-    if (error) {
-        return error;
+    if (SendCommand(interface, "Close:", 6)) {
+        return -1;
     }
 
-    close(interface->writePipe);
-    close(interface->readPipe);
+    char* responsePayload;
+    int responseSize;
+    if (ReceiveResponse(interface, &responsePayload, &responseSize)) {
+        return -1;
+    }
+
+    if (responseSize != 1 || responsePayload[0]) {
+        return -1;
+    }
+
+    if (close(interface->writePipe)) {
+        return -1;
+    }
+
+    if (close(interface->readPipe)) {
+        return -1;
+    }
 
     return 0;
 }
 
-int GenerateMutation(ModelInterface* interface, char** output, int* outputSize) {
+int GetAction(const ModelInterface* const interface, 
+    const char* const state, const unsigned int stateSize, 
+    unsigned int* action) {
+    // Give the model a state (program input) it will choose an action (input mutation)
+
+    return 0;
+}
+
+int RecordExperience(const ModelInterface* const interface,
+    const char* const state, const unsigned int stateSize,
+    const char* const nextState, const unsigned int nextStateSize,
+    const unsigned int action, const unsigned int reward) {
+    // Recording an experience for training the model. We are going to use the bellman equation as the objective function
+    // Q(s,a) = r(s,a) + max_a' Q(s', a') => regress on (Q(s,a) - (r(s,a) + max_a' Q(s', a')))^2 (squared error)
+
+    return 0;
+}
+
+int ReplayExperiences(const ModelInterface* const interface) {
+    // Replay all the experiences from the episode to update the model weights
+
+    return 0;
+}
+
+/*int GenerateMutation(const ModelInterface* const interface, char** output, int* outputSize) {
     if (interface == NULL) {
         return -1;
     }
@@ -83,4 +159,4 @@ int UpdateModel(ModelInterface* interface, int codeCoverage) {
     read(interface->readPipe, &errorBuffer, 1);
 
     return atoi(&errorBuffer);
-}
+}*/
