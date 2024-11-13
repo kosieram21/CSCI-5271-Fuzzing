@@ -15,7 +15,7 @@ class ModelInterface():
         if not os.path.exists(FIFO_PY_TO_C):
             os.mkfifo(FIFO_PY_TO_C)
 
-        self.readPipe = open(FIFO_C_TO_PY, 'r')
+        self.readPipe = open(FIFO_C_TO_PY, 'rb')
         self.writePipe = open(FIFO_PY_TO_C, 'wb')
 
     def close(self):
@@ -23,10 +23,10 @@ class ModelInterface():
         self.writePipe.close()
 
     def receive_command(self):
-        header = bytes(self.readPipe.read(4), encoding='utf-8')
+        header = self.readPipe.read(4)
         payload_size = struct.unpack('>I', header)[0]
         payload = self.readPipe.read(payload_size)
-        command, args = payload.split(':', 1)
+        command, args = str(payload).split(':', 1)
         # we need to be able to decode the arg string for other commands
         return command, args
 
@@ -46,7 +46,7 @@ while processing:
 
     if command == 'Close':
         print('closing...')
-        model_interface.send_response(str(0))
+        model_interface.send_response((0).to_bytes(1, byteorder='big'))
         model_interface.close()
         processing = False
 
