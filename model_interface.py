@@ -23,8 +23,7 @@ class ModelInterface():
         self.writePipe.close()
 
     def receive_command(self):
-        header = self.readPipe.read(4)
-        print(len(header))
+        header = bytes(self.readPipe.read(4), encoding='utf-8')
         print(header)
         payload_size = struct.unpack('>I', header)[0]
         payload = self.readPipe.read(payload_size)
