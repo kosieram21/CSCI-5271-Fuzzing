@@ -44,7 +44,7 @@ int ReceiveResponse(const ModelInterface* const interface, char** payload, size_
 
     *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
 
-    if (read(interface->readPipe, &payload, &payloadSize)) {
+    if (read(interface->readPipe, &payload, *payloadSize)) {
         return -1;
     }
 
