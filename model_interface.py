@@ -16,7 +16,7 @@ class ModelInterface():
             os.mkfifo(FIFO_PY_TO_C)
 
         self.readPipe = open(FIFO_C_TO_PY, 'r')
-        self.writePipe = open(FIFO_PY_TO_C, 'w')
+        self.writePipe = open(FIFO_PY_TO_C, 'wb')
 
     def close(self):
         self.readPipe.close()
@@ -33,8 +33,7 @@ class ModelInterface():
     def send_response(self, payload):
         payload_size = len(payload)
         header = payload_size.to_bytes(4, byteorder='big')
-        print(header.hex())
-        self.writePipe.write(header.hex())
+        self.writePipe.write(header)
         self.writePipe.write(payload)
 
 model_interface = ModelInterface()
