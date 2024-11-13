@@ -14,7 +14,7 @@ typedef struct {
     int readPipe;
 } ModelInterface;
 
-int SendCommand(const ModelInterface* const interface, const char* const payload, const size_t payloadSize) 
+int SendCommand(const ModelInterface* const interface, const unsigned char* const payload, const size_t payloadSize) 
 {
     if (interface == NULL) {
         printf("SendCommand: interface must not be NULL\n");
@@ -36,7 +36,7 @@ int SendCommand(const ModelInterface* const interface, const char* const payload
     return 0;
 }
 
-int ReceiveResponse(const ModelInterface* const interface, char** payload, size_t* payloadSize) {
+int ReceiveResponse(const ModelInterface* const interface, unsigned char** payload, size_t* payloadSize) {
     if (interface == NULL) {
         printf("ReceiveResponse: interface must not be NULL\n");
         return -1;
@@ -49,6 +49,8 @@ int ReceiveResponse(const ModelInterface* const interface, char** payload, size_
     }
 
     *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
+    *payload = (unsigned char*)malloc(*payloadSize);
+    printf("%d\n", *payloadSize);
 
     if (read(interface->readPipe, *payload, *payloadSize) != *payloadSize) {
         printf("%s\n", *payload);
@@ -100,17 +102,23 @@ int CloseInterface(ModelInterface* const interface) {
         return -1;
     }
 
-    char* responsePayload;
+    unsigned char* responsePayload;
     size_t responseSize;
-    if (ReceiveResponse(interface, &responsePayload, &responseSize)) {
+    if (ReceiveResponse(interface, &responsePayload, &responseSize) || responsePayload == NULL) {
         printf("CloseInterface: failed to recieve response\n");
+        if (responsePayload != NULL) {
+            free(responsePayload);
+        }
         return -1;
     }
 
     if (responseSize != 1 || responsePayload[0]) {
         printf("CloseInterface: command execution failed\n");
+        free(responsePayload);
         return -1;
     }
+
+    free(responsePayload);
 
     if (close(interface->writePipe)) {
         printf("CloseInterface: failed to close write pipe\n");
