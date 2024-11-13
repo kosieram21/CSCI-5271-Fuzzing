@@ -25,6 +25,7 @@ class ModelInterface():
     def receive_command(self):
         header = bytes(self.readPipe.read(4), encoding='utf-8')
         payload_size = struct.unpack('>I', header)[0]
+        print(payload_size)
         payload = self.readPipe.read(payload_size)
         print(payload)
         command, args = payload.split(':', 1)
