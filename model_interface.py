@@ -26,7 +26,7 @@ class ModelInterface():
         header = self.readPipe.read(4)
         payload_size = struct.unpack('>I', header)[0]
         payload = self.readPipe.read(payload_size)
-        command, args = str(payload).split(':', 1)
+        command, args = payload.decode('utf-8').split(':', 1)
         # we need to be able to decode the arg string for other commands
         return command, args
 
