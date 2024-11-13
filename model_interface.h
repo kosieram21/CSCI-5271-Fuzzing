@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <arpa/inet.h> 
 
 #define FIFO_C_TO_PY "c_to_py_fifo"
 #define FIFO_PY_TO_C "py_to_c_fifo"
@@ -52,6 +53,7 @@ int ReceiveResponse(const ModelInterface* const interface, unsigned char** paylo
     *payload = (unsigned char*)malloc(*payloadSize);
 
     if (read(interface->readPipe, *payload, *payloadSize) != *payloadSize) {
+        free(payload);
         printf("ReceiveResponse: failed to read payload\n");
         return -1;
     }
@@ -104,15 +106,11 @@ int CloseInterface(ModelInterface* const interface) {
     size_t responseSize;
     if (ReceiveResponse(interface, &responsePayload, &responseSize) || responsePayload == NULL) {
         printf("CloseInterface: failed to recieve response\n");
-        if (responsePayload != NULL) {
-            free(responsePayload);
-        }
         return -1;
     }
 
     if (responseSize != 1 || responsePayload[0]) {
         printf("CloseInterface: command execution failed\n");
-        free(responsePayload);
         return -1;
     }
 
@@ -134,6 +132,24 @@ int CloseInterface(ModelInterface* const interface) {
 int GetAction(const ModelInterface* const interface, 
     const char* const state, const unsigned int stateSize, 
     unsigned int* action) {
+    if (interface == NULL) {
+        printf("GetAction: interface must not be NULL\n");
+        return -1;
+    }
+
+    const size_t commandPayloadSize = 14 + stateSize;
+    unsigned char* commandPayload = (unsigned char*)malloc(commandPayloadSize);
+    memcpy(commandPayload, "GetAction:", 10);
+    memcpy(commandPayload + 10, &htonl(stateSize), 4);
+    memcpy(commandPayload + 14, state, stateSize);
+
+    if (SendCommand(interface, commandPayload, commandPayloadSize)) {
+        free(commandPayload);
+        printf("GetAction: failed to send command\n");
+        return -1;
+    }
+
+    free(commandPayload);
     // Give the model a state (program input) it will choose an action (input mutation)
 
     return 0;
@@ -154,40 +170,3 @@ int ReplayExperiences(const ModelInterface* const interface) {
 
     return 0;
 }
-
-/*int GenerateMutation(const ModelInterface* const interface, char** output, int* outputSize) {
-    if (interface == NULL) {
-        return -1;
-    }
-
-    write(interface->writePipe, "GenerateMutation\n", 17);
-    
-    char buffer[10];
-    read(interface->readPipe, buffer, sizeof(buffer));
-
-    int tmp = atoi(buffer);
-    outputSize = &tmp;
-    read(interface->readPipe, *output, *outputSize);
-
-    char errorBuffer;
-    read(interface->readPipe, &errorBuffer, 1);
-
-    return atoi(&errorBuffer);
-}
-
-int UpdateModel(ModelInterface* interface, int codeCoverage) {
-    if (interface == NULL) {
-        return -1;
-    }
-
-    write(interface->writePipe, "UpdateModel\n", 12);
-    
-    char buffer[11];
-    snprintf(buffer, sizeof(buffer), "%d\n", codeCoverage);
-    write(interface->writePipe, buffer, sizeof(buffer));
-
-    char errorBuffer;
-    read(interface->readPipe, &errorBuffer, 1);
-
-    return atoi(&errorBuffer);
-}*/

@@ -43,12 +43,16 @@ processing = True
 while processing:
     command, args = model_interface.receive_command()
     print(command)
+    print(args)
 
     if command == 'Close':
         print('closing...')
-        model_interface.send_response((1).to_bytes(1, byteorder='big'))
+        model_interface.send_response((0).to_bytes(1, byteorder='big'))
         model_interface.close()
         processing = False
+    elif command == 'GetAction':
+        print('getting action...')
+
 
     # if command == 'GenerateMutation':
     #     print('mutating...')
