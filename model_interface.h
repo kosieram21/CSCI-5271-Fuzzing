@@ -51,7 +51,7 @@ int ReceiveResponse(const ModelInterface* const interface, char** payload, unsig
     return 0;
 }
 
-int OpenInterface(const ModelInterface* interface) {
+int OpenInterface(ModelInterface* const interface) {
     if (interface == NULL) {
         return -1;
     }
@@ -70,7 +70,7 @@ int OpenInterface(const ModelInterface* interface) {
     return 0;
 }
 
-int CloseInterface(const ModelInterface* interface) {
+int CloseInterface(ModelInterface* const interface) {
     if (interface == NULL) {
         return -1;
     }
