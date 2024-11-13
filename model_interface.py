@@ -25,16 +25,14 @@ class ModelInterface():
     def receive_command(self):
         header = bytes(self.readPipe.read(4), encoding='utf-8')
         payload_size = struct.unpack('>I', header)[0]
-        print(payload_size)
         payload = self.readPipe.read(payload_size)
-        print(bytes(payload, encoding='utf-8'))
         command, args = payload.split(':', 1)
         # we need to be able to decode the arg string for other commands
         return command, args
 
     def send_response(self, payload):
         payload_size = len(payload)
-        header = payload_size.to_bytes(4, byteorder='big')
+        header = str(payload_size.to_bytes(4, byteorder='big'))
         self.writePipe.write(header)
         self.writePipe.write(payload)
 

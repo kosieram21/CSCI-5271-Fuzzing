@@ -17,18 +17,19 @@ typedef struct {
 int SendCommand(const ModelInterface* const interface, const char* const payload, const size_t payloadSize) 
 {
     if (interface == NULL) {
+        printf("SendCommand: interface must not be NULL\n");
         return -1;
     }
 
     const unsigned char header[4] = { payloadSize >> 24, payloadSize >> 16, payloadSize >> 8, payloadSize };
 
     if (write(interface->writePipe, header, sizeof(header)) != sizeof(header)) {
+        printf("SendCommand: failed to write header\n");
         return -1;
     }
 
-    printf("%s\n", payload);
-
     if (write(interface->writePipe, payload, payloadSize) != payloadSize) {
+        printf("SendCommand: failed to write payload\n");
         return -1;
     }
 
@@ -37,17 +38,20 @@ int SendCommand(const ModelInterface* const interface, const char* const payload
 
 int ReceiveResponse(const ModelInterface* const interface, char** payload, size_t* payloadSize) {
     if (interface == NULL) {
+        printf("ReceiveResponse: interface must not be NULL\n");
         return -1;
     }
 
     unsigned char header[4];
     if (read(interface->readPipe, header, sizeof(header)) != sizeof(header)) {
+        printf("ReceiveResponse: failed to read header\n");
         return -1;
     }
 
     *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
 
     if (read(interface->readPipe, &payload, *payloadSize) != *payloadSize) {
+        printf("ReceiveResponse: failed to read payload\n");
         return -1;
     }
 
@@ -56,47 +60,64 @@ int ReceiveResponse(const ModelInterface* const interface, char** payload, size_
 
 int OpenInterface(ModelInterface* const interface) {
     if (interface == NULL) {
+        printf("OpenInterface: interface must not be NULL\n");
         return -1;
     }
 
     if (mkfifo(FIFO_C_TO_PY, 0666) && errno != EEXIST) {
+        printf("OpenInterface: failed to make write pipe\n");
         return -1;
     }
 
     if (mkfifo(FIFO_PY_TO_C, 0666) && errno != EEXIST) {
+        printf("OpenInterface: failed to make read pipe\n");
         return -1;
     }
 
     interface->writePipe = open(FIFO_C_TO_PY, O_WRONLY);
+    if (interface->writePipe == -1) {
+        printf("OpenInterface: failed to open write pipe\n");
+        return -1;
+    }
+
     interface->readPipe = open(FIFO_PY_TO_C, O_RDONLY);
+    if (interface->readPipe == -1) {
+        printf("OpenInterface: failed to open read pipe\n");
+    }
 
     return 0;
 }
 
 int CloseInterface(ModelInterface* const interface) {
     if (interface == NULL) {
+        printf("CloseInterface: interface must not be NULL\n");
         return -1;
     }
 
     if (SendCommand(interface, "Close:", 6)) {
+        printf("CloseInterface: failed to send command\n");
         return -1;
     }
 
     char* responsePayload;
     size_t responseSize;
     if (ReceiveResponse(interface, &responsePayload, &responseSize)) {
+        printf("CloseInterface: failed to recieve response\n");
         return -1;
     }
 
     if (responseSize != 1 || responsePayload[0]) {
+        printf("CloseInterface: command execution failed\n");
         return -1;
     }
 
     if (close(interface->writePipe)) {
+        printf("CloseInterface: failed to close write pipe\n");
         return -1;
     }
 
     if (close(interface->readPipe)) {
+        printf("CloseInterface: failed to close read pipe\n");
         return -1;
     }
 
