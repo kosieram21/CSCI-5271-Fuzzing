@@ -33,6 +33,7 @@ class ModelInterface():
     def send_response(self, payload):
         payload_size = len(payload)
         header = payload_size.to_bytes(4, byteorder='big')
+        print(header.hex())
         self.writePipe.write(header.hex())
         self.writePipe.write(payload)
 
