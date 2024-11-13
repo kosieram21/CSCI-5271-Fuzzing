@@ -20,8 +20,10 @@ int SendCommand(const ModelInterface* const interface, const char* const payload
         return -1;
     }
 
-    const char header[4] = { payloadSize >> 24, payloadSize >> 16, payloadSize >> 8, payloadSize };
-    printf("%s\n", header);
+    const unsigned char header[4] = { payloadSize >> 24, payloadSize >> 16, payloadSize >> 8, payloadSize };
+    for (int i = 0; i < 4; i++) {
+        printf("header[%d] = 0x%02X\n", i, header[i]);
+    }
 
     if (write(interface->writePipe, header, sizeof(header))) {
         return -1;
@@ -39,7 +41,7 @@ int ReceiveResponse(const ModelInterface* const interface, char** payload, size_
         return -1;
     }
 
-    char header[4];
+    unsigned char header[4];
     if (read(interface->readPipe, header, sizeof(header))) {
         return -1;
     }
