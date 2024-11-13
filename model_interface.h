@@ -57,24 +57,16 @@ int OpenInterface(ModelInterface* const interface) {
         return -1;
     }
 
-    printf("testing1");
-
     if (mkfifo(FIFO_C_TO_PY, 0666) && errno != EEXIST) {
         return -1;
     }
-
-    printf("testing2");
 
     if (mkfifo(FIFO_PY_TO_C, 0666) && errno != EEXIST) {
         return -1;
     }
 
-    printf("testing3");
-
     interface->writePipe = open(FIFO_C_TO_PY, O_WRONLY);
     interface->readPipe = open(FIFO_PY_TO_C, O_RDONLY);
-
-    printf("testing4");
 
     return 0;
 }
