@@ -7,7 +7,7 @@ int main() {
     }
 
     unsigned int action;
-    if (GetAction(interface, "test state", 10, &action)) {
+    if (GetAction(&interface, "test state", 10, &action)) {
         return -1;
     }
 
