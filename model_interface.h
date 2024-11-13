@@ -14,7 +14,7 @@ typedef struct {
     int readPipe;
 } ModelInterface;
 
-int SendCommand(const ModelInterface* const interface, const char* const payload, const size_t payloadSize) 
+int SendCommand(const ModelInterface* const interface, char* payload, const size_t payloadSize) 
 {
     if (interface == NULL) {
         return -1;
