@@ -67,6 +67,8 @@ int OpenInterface(ModelInterface* const interface) {
     interface->writePipe = open(FIFO_C_TO_PY, O_WRONLY);
     interface->readPipe = open(FIFO_PY_TO_C, O_RDONLY);
 
+    printf("testing");
+
     return 0;
 }
 
