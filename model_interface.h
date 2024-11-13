@@ -26,7 +26,7 @@ int SendCommand(const ModelInterface* const interface, const char* const payload
         return -1;
     }
 
-    printf(payload);
+    printf("%s", payload);
 
     if (write(interface->writePipe, payload, payloadSize)) {
         return -1;
