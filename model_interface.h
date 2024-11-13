@@ -21,9 +21,6 @@ int SendCommand(const ModelInterface* const interface, const char* const payload
     }
 
     const unsigned char header[4] = { payloadSize >> 24, payloadSize >> 16, payloadSize >> 8, payloadSize };
-    for (int i = 0; i < 4; i++) {
-        printf("header[%d] = 0x%02X\n", i, header[i]);
-    }
 
     if (write(interface->writePipe, header, sizeof(header))) {
         return -1;
