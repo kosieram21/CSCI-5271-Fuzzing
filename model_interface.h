@@ -22,13 +22,13 @@ int SendCommand(const ModelInterface* const interface, const char* const payload
 
     const unsigned char header[4] = { payloadSize >> 24, payloadSize >> 16, payloadSize >> 8, payloadSize };
 
-    if (write(interface->writePipe, header, sizeof(header))) {
+    if (write(interface->writePipe, header, sizeof(header)) != sizeof(header)) {
         return -1;
     }
 
     printf("%s\n", payload);
 
-    if (write(interface->writePipe, payload, payloadSize)) {
+    if (write(interface->writePipe, payload, payloadSize) != payloadSize) {
         return -1;
     }
 
@@ -41,13 +41,13 @@ int ReceiveResponse(const ModelInterface* const interface, char** payload, size_
     }
 
     unsigned char header[4];
-    if (read(interface->readPipe, header, sizeof(header))) {
+    if (read(interface->readPipe, header, sizeof(header)) != sizeof(header)) {
         return -1;
     }
 
     *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
 
-    if (read(interface->readPipe, &payload, *payloadSize)) {
+    if (read(interface->readPipe, &payload, *payloadSize) != *payloadSize) {
         return -1;
     }
 
