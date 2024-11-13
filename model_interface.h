@@ -50,7 +50,7 @@ int ReceiveResponse(const ModelInterface* const interface, unsigned char** paylo
 
     *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
     *payload = (unsigned char*)malloc(*payloadSize);
-    printf("%d\n", *payloadSize);
+    printf("%ld\n", *payloadSize);
 
     if (read(interface->readPipe, *payload, *payloadSize) != *payloadSize) {
         printf("%s\n", *payload);
