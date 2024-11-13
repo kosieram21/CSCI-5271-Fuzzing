@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -58,13 +59,13 @@ int OpenInterface(ModelInterface* const interface) {
 
     printf("testing1");
 
-    if (mkfifo(FIFO_C_TO_PY, 0666)) {
+    if (mkfifo(FIFO_C_TO_PY, 0666) && errno != EEXIST) {
         return -1;
     }
 
     printf("testing2");
 
-    if (mkfifo(FIFO_PY_TO_C, 0666)) {
+    if (mkfifo(FIFO_PY_TO_C, 0666) && errno != EEXIST) {
         return -1;
     }
 
