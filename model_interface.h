@@ -51,6 +51,7 @@ int ReceiveResponse(const ModelInterface* const interface, char** payload, size_
     *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
 
     if (read(interface->readPipe, &payload, *payloadSize) != *payloadSize) {
+        printf("%s\n", payload);
         printf("ReceiveResponse: failed to read payload\n");
         return -1;
     }
