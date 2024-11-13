@@ -24,7 +24,7 @@ class ModelInterface():
 
     def receive_command(self):
         header = self.readPipe.read(4)
-        payload_size = struct.unpack('>I', header)[0]
+        payload_size = struct.unpack('<I', header)[0]
         payload = self.readPipe.read(payload_size)
         command, args = payload.decode('utf-8').split(':', 1)
         # we need to be able to decode the arg string for other commands
@@ -32,7 +32,7 @@ class ModelInterface():
 
     def send_response(self, payload):
         payload_size = len(payload)
-        header = payload_size.to_bytes(4, byteorder='big')
+        header = payload_size.to_bytes(4, byteorder='little')
         self.writePipe.write(header)
         self.writePipe.write(payload)
 
@@ -47,7 +47,7 @@ while processing:
 
     if command == 'Close':
         print('closing...')
-        model_interface.send_response((0).to_bytes(1, byteorder='big'))
+        model_interface.send_response((0).to_bytes(1, byteorder='little'))
         model_interface.close()
         processing = False
     elif command == 'GetAction':

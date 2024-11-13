@@ -22,7 +22,7 @@ int SendCommand(const ModelInterface* const interface, const unsigned char* cons
         return -1;
     }
 
-    const unsigned char header[4] = { payloadSize >> 24, payloadSize >> 16, payloadSize >> 8, payloadSize };
+    const unsigned char header[4] = { payloadSize, payloadSize >> 8, payloadSize >> 16, payloadSize >> 24 };
 
     if (write(interface->writePipe, header, sizeof(header)) != sizeof(header)) {
         printf("SendCommand: failed to write header\n");
@@ -49,7 +49,7 @@ int ReceiveResponse(const ModelInterface* const interface, unsigned char** paylo
         return -1;
     }
 
-    *payloadSize = header[0] << 24 | header[1] << 16 | header[2] << 8 | header[3];
+    *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
     *payload = (unsigned char*)malloc(*payloadSize);
 
     if (read(interface->readPipe, *payload, *payloadSize) != *payloadSize) {
@@ -140,7 +140,7 @@ int GetAction(const ModelInterface* const interface,
     const size_t commandPayloadSize = 14 + stateSize;
     unsigned char* commandPayload = (unsigned char*)malloc(commandPayloadSize);
     memcpy(commandPayload, "GetAction:", 10);
-    memcpy(commandPayload + 10, &htonl(stateSize), 4);
+    memcpy(commandPayload + 10, &stateSize, 4);
     memcpy(commandPayload + 14, state, stateSize);
 
     if (SendCommand(interface, commandPayload, commandPayloadSize)) {
