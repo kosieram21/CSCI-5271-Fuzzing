@@ -13,7 +13,7 @@ typedef struct {
     int readPipe;
 } ModelInterface;
 
-int SendCommand(const ModelInterface* const interface, const char* const payload, const unsigned int payloadSize) 
+int SendCommand(const ModelInterface* const interface, const char* const payload, const size_t payloadSize) 
 {
     if (interface == NULL) {
         return -1;
@@ -32,7 +32,7 @@ int SendCommand(const ModelInterface* const interface, const char* const payload
     return 0;
 }
 
-int ReceiveResponse(const ModelInterface* const interface, char** payload, unsigned int* payloadSize) {
+int ReceiveResponse(const ModelInterface* const interface, char** payload, size_t* payloadSize) {
     if (interface == NULL) {
         return -1;
     }
@@ -80,7 +80,7 @@ int CloseInterface(ModelInterface* const interface) {
     }
 
     char* responsePayload;
-    int responseSize;
+    size_t responseSize;
     if (ReceiveResponse(interface, &responsePayload, &responseSize)) {
         return -1;
     }

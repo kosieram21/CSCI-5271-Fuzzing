@@ -42,6 +42,7 @@ processing = True
 
 while processing:
     command, args = model_interface.receive_command()
+    print(command)
 
     if command == 'Close':
         print('closing...')
