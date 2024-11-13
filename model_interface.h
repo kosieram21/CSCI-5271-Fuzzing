@@ -48,6 +48,8 @@ int ReceiveResponse(const ModelInterface* const interface, unsigned char** paylo
         return -1;
     }
 
+    printf("%s\n", header);
+
     *payloadSize = header[0] << 24 | header[1] << 16 | header[2] << 8 | header[3];
     *payload = (unsigned char*)malloc(*payloadSize);
     printf("%ld\n", *payloadSize);
