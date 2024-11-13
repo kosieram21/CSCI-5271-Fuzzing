@@ -21,6 +21,7 @@ int SendCommand(const ModelInterface* const interface, const char* const payload
     }
 
     const char header[4] = { payloadSize >> 24, payloadSize >> 16, payloadSize >> 8, payloadSize };
+    printf("%s\n", header);
 
     if (write(interface->writePipe, header, sizeof(header))) {
         return -1;
