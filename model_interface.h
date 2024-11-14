@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <arpa/inet.h> 
 
 #define FIFO_C_TO_PY "c_to_py_fifo"
 #define FIFO_PY_TO_C "py_to_c_fifo"
