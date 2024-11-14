@@ -112,9 +112,6 @@ int CloseInterface(ModelInterface* const interface) {
         return -1;
     }
 
-    printf("%d\n", responseSize);
-    printf("%s\n", responsePayload);
-
     if (responseSize != 1 || responsePayload[0]) {
         printf("CloseInterface: command execution failed\n");
         return -1;
@@ -135,9 +132,10 @@ int CloseInterface(ModelInterface* const interface) {
     return 0;
 }
 
+// Give the model a state (program input) it will choose an action (input mutation)
 int GetAction(const ModelInterface* const interface, 
     const char* const state, const unsigned int stateSize, 
-    unsigned int* action) {
+    unsigned char* action) {
     if (interface == NULL) {
         printf("GetAction: interface must not be NULL\n");
         return -1;
@@ -156,7 +154,22 @@ int GetAction(const ModelInterface* const interface,
     }
 
     free(commandPayload);
-    // Give the model a state (program input) it will choose an action (input mutation)
+
+    unsigned char* responsePayload;
+    unsigned int responseSize;
+    if (ReceiveResponse(interface, &responsePayload, &responseSize) || responsePayload == NULL) {
+        printf("GetAction: failed to recieve response\n");
+        return -1;
+    }
+
+    if (responseSize != 2 || responsePayload[0]) {
+        printf("GetAction: command execution failed\n");
+        return -1;
+    }
+
+    *action = responsePayload[1];
+
+    free(responsePayload);
 
     return 0;
 }

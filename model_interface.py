@@ -56,14 +56,12 @@ while processing:
         print(state_size)
         print(state)
         try:
-            state = args
             error_code = 0
             action = 3  #number corresponding to model output of what action to take
         except:
             error_code = 1
             action = 0  #do nothing, we failed
         response_payload = (error_code).to_bytes(1, byteorder='little')
-        response_payload += (1).to_bytes(4, byteorder='little')
         response_payload += (action).to_bytes(1, byteorder='little')
         model_interface.send_response(response_payload)
 
