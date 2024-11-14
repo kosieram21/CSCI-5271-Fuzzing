@@ -27,28 +27,13 @@ class ModelInterface():
         payload_size = struct.unpack('<I', header)[0]
         payload = self.readPipe.read(payload_size)
         command, args = payload.decode('utf-8').split(':', 1)
-        #args_lst = self._parse_args(args)
-        return command, args
+        return command, args.encode('utf-8')
 
     def send_response(self, payload):
         payload_size = len(payload)
         header = payload_size.to_bytes(4, byteorder='little')
         self.writePipe.write(header)
         self.writePipe.write(payload)
-
-    def _parse_args(self, args):
-        args_len = len(args)
-        args = args.encode('utf-8')
-        args = (args).to_bytes(args_len, byteorder='little')
-        args_lst = []
-        last_arg = 0
-        while last_arg < args_len:
-            arg_size = args[last_arg:last_arg + 4]
-            arg_size = struct.unpack('<I', arg_size)[0]
-            arg = args[last_arg + 4: last_arg + 4 + arg_size]
-            last_arg = last_arg + 4 + arg_size + 1
-            args_lst.append(arg)
-        return args_lst
 
 model_interface = ModelInterface()
 model_interface.open()
@@ -66,6 +51,10 @@ while processing:
         processing = False
     elif command == 'GetAction':
         print('getting action...')
+        state_size = struct.unpack('<I', args[:4])[0]
+        state = args[4:].decode('utf-8')
+        print(state_size)
+        print(state)
         try:
             state = args
             error_code = 0
