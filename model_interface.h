@@ -55,6 +55,8 @@ int ReceiveResponse(const ModelInterface* const interface, unsigned char** paylo
     memcpy(payloadSize, header, 4);
     *payload = (unsigned char*)malloc(*payloadSize);
 
+    printf("response payload size: %d\n", payloadSize);
+
     if (read(interface->readPipe, *payload, *payloadSize) != *payloadSize) {
         free(payload);
         printf("ReceiveResponse: failed to read payload\n");
