@@ -27,8 +27,8 @@ class ModelInterface():
         payload_size = struct.unpack('<I', header)[0]
         payload = self.readPipe.read(payload_size)
         command, args = payload.decode('utf-8').split(':', 1)
-        args_lst = self._parse_args(args)
-        return command, args_lst
+        #args_lst = self._parse_args(args)
+        return command, args
 
     def send_response(self, payload):
         payload_size = len(payload)
