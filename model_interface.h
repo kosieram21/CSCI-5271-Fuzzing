@@ -15,14 +15,16 @@ typedef struct {
     int readPipe;
 } ModelInterface;
 
-int SendCommand(const ModelInterface* const interface, const unsigned char* const payload, const size_t payloadSize) 
+int SendCommand(const ModelInterface* const interface, const unsigned char* const payload, const unsigned int payloadSize) 
 {
     if (interface == NULL) {
         printf("SendCommand: interface must not be NULL\n");
         return -1;
     }
 
-    const unsigned char header[4] = { payloadSize, payloadSize >> 8, payloadSize >> 16, payloadSize >> 24 };
+    //const unsigned char header[4] = { payloadSize, payloadSize >> 8, payloadSize >> 16, payloadSize >> 24 };
+    unsigned char header[4];
+    memcpy(header, &payloadSize, 4);
 
     if (write(interface->writePipe, header, sizeof(header)) != sizeof(header)) {
         printf("SendCommand: failed to write header\n");
@@ -37,7 +39,7 @@ int SendCommand(const ModelInterface* const interface, const unsigned char* cons
     return 0;
 }
 
-int ReceiveResponse(const ModelInterface* const interface, unsigned char** payload, size_t* payloadSize) {
+int ReceiveResponse(const ModelInterface* const interface, unsigned char** payload, unsigned int* payloadSize) {
     if (interface == NULL) {
         printf("ReceiveResponse: interface must not be NULL\n");
         return -1;
@@ -49,7 +51,8 @@ int ReceiveResponse(const ModelInterface* const interface, unsigned char** paylo
         return -1;
     }
 
-    *payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
+    //*payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
+    memcpy(payloadSize, header, 4);
     *payload = (unsigned char*)malloc(*payloadSize);
 
     if (read(interface->readPipe, *payload, *payloadSize) != *payloadSize) {
@@ -103,7 +106,7 @@ int CloseInterface(ModelInterface* const interface) {
     }
 
     unsigned char* responsePayload;
-    size_t responseSize;
+    unsigned int responseSize;
     if (ReceiveResponse(interface, &responsePayload, &responseSize) || responsePayload == NULL) {
         printf("CloseInterface: failed to recieve response\n");
         return -1;
@@ -137,7 +140,7 @@ int GetAction(const ModelInterface* const interface,
         return -1;
     }
 
-    const size_t commandPayloadSize = 14 + stateSize;
+    const unsigned int commandPayloadSize = 14 + stateSize;
     unsigned char* commandPayload = (unsigned char*)malloc(commandPayloadSize);
     memcpy(commandPayload, "GetAction:", 10);
     memcpy(commandPayload + 10, &stateSize, 4);
