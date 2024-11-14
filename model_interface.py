@@ -38,6 +38,7 @@ class ModelInterface():
         self.writePipe.write(header)
         print("POST HEADER WRITE")
         self.writePipe.write(payload)
+        self.writePipe.flush()
 
 model_interface = ModelInterface()
 model_interface.open()
