@@ -112,6 +112,9 @@ int CloseInterface(ModelInterface* const interface) {
         return -1;
     }
 
+    printf("%d\n", responseSize);
+    printf("%s\n", responsePayload);
+
     if (responseSize != 1 || responsePayload[0]) {
         printf("CloseInterface: command execution failed\n");
         return -1;
