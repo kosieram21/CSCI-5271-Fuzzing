@@ -161,6 +161,8 @@ int GetAction(const ModelInterface* const interface,
 
     free(commandPayload);
 
+    printf("we sent the command\n");
+
     unsigned char* responsePayload;
     unsigned int responseSize;
     if (ReceiveResponse(interface, &responsePayload, &responseSize) || responsePayload == NULL) {
