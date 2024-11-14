@@ -22,7 +22,6 @@ int SendCommand(const ModelInterface* const interface, const unsigned char* cons
         return -1;
     }
 
-    //const unsigned char header[4] = { payloadSize, payloadSize >> 8, payloadSize >> 16, payloadSize >> 24 };
     unsigned char header[4];
     memcpy(header, &payloadSize, 4);
 
@@ -40,14 +39,10 @@ int SendCommand(const ModelInterface* const interface, const unsigned char* cons
 }
 
 int ReceiveResponse(const ModelInterface* const interface, unsigned char** payload, unsigned int* payloadSize) {
-    printf("????\n");
-    
     if (interface == NULL) {
         printf("ReceiveResponse: interface must not be NULL\n");
         return -1;
     }
-
-    printf("PRE\n");
 
     unsigned char header[4];
     if (read(interface->readPipe, header, sizeof(header)) != sizeof(header)) {
@@ -55,13 +50,8 @@ int ReceiveResponse(const ModelInterface* const interface, unsigned char** paylo
         return -1;
     }
 
-    printf("POST\n");
-
-    //*payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
     memcpy(payloadSize, header, 4);
     *payload = (unsigned char*)malloc(*payloadSize);
-
-    printf("response payload size: %d\n", *payloadSize);
 
     if (read(interface->readPipe, *payload, *payloadSize) != *payloadSize) {
         free(payload);
@@ -163,18 +153,12 @@ int GetAction(const ModelInterface* const interface,
 
     free(commandPayload);
 
-    printf("we sent the command\n");
-
     unsigned char* responsePayload;
     unsigned int responseSize;
     if (ReceiveResponse(interface, &responsePayload, &responseSize) || responsePayload == NULL) {
         printf("GetAction: failed to recieve response\n");
         return -1;
     }
-
-    printf("%d\n", responseSize);
-    printf("%d\n", responsePayload[0]);
-    printf("%d\n", responsePayload[1]);
 
     if (responseSize != 2 || responsePayload[0]) {
         printf("GetAction: command execution failed\n");

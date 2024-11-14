@@ -31,12 +31,8 @@ class ModelInterface():
 
     def send_response(self, payload):
         payload_size = len(payload)
-        print(payload_size)
         header = payload_size.to_bytes(4, byteorder='little')
-        print(len(header))
-        print("PRE HEADER WRITE")
         self.writePipe.write(header)
-        print("POST HEADER WRITE")
         self.writePipe.write(payload)
         self.writePipe.flush()
 

@@ -11,7 +11,7 @@ int main() {
         return -1;
     }
 
-    printf("action: %d", action);
+    printf("action: %d\n", action);
 
     if (CloseInterface(&interface)) {
         return -1;
