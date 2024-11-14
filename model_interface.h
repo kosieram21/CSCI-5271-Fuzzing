@@ -40,7 +40,7 @@ int SendCommand(const ModelInterface* const interface, const unsigned char* cons
 }
 
 int ReceiveResponse(const ModelInterface* const interface, unsigned char** payload, unsigned int* payloadSize) {
-    print("????\n");
+    printf("????\n");
     
     if (interface == NULL) {
         printf("ReceiveResponse: interface must not be NULL\n");
