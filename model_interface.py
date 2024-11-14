@@ -63,7 +63,7 @@ while processing:
         response_payload = (error_code).to_bytes(1, byteorder='little')
         response_payload += (action).to_bytes(1, byteorder='little')
         model_interface.send_response(response_payload)
-    elif command == "RecordExperience":
+    elif command == 'RecordExperience':
         print('recording experience...')
         state_size = struct.unpack('<I', args[:4])[0]
         state = args[4: 4 + state_size].decode('utf-8')
@@ -77,4 +77,8 @@ while processing:
         print(f'next state: {next_state}')
         print(f'action: {action}')
         print(f'reward: {reward}')
+        model_interface.send_response((0).to_bytes(1, byteorder='little'))
+    elif command == 'ReplayExperiences':
+        print('replaying experiences...')
+        model = 0   #update model loop goes here
         model_interface.send_response((0).to_bytes(1, byteorder='little'))

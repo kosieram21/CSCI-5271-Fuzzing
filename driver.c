@@ -17,6 +17,10 @@ int main() {
         return -1;
     }
 
+    if (ReplayExperiences(&interface)) {
+        return -1;
+    }
+
     if (CloseInterface(&interface)) {
         return -1;
     }
