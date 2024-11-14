@@ -45,11 +45,15 @@ int ReceiveResponse(const ModelInterface* const interface, unsigned char** paylo
         return -1;
     }
 
+    printf("PRE");
+
     unsigned char header[4];
     if (read(interface->readPipe, header, sizeof(header)) != sizeof(header)) {
         printf("ReceiveResponse: failed to read header\n");
         return -1;
     }
+
+    printf("POST");
 
     //*payloadSize = header[3] << 24 | header[2] << 16 | header[1] << 8 | header[0];
     memcpy(payloadSize, header, 4);
