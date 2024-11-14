@@ -162,6 +162,10 @@ int GetAction(const ModelInterface* const interface,
         return -1;
     }
 
+    printf("%d\n", responseSize);
+    printf("%d\n", responsePayload[0]);
+    printf("%d\n", responsePayload[1]);
+
     if (responseSize != 2 || responsePayload[0]) {
         printf("GetAction: command execution failed\n");
         return -1;
