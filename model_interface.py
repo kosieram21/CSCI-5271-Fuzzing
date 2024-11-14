@@ -33,7 +33,9 @@ class ModelInterface():
         payload_size = len(payload)
         print(payload_size)
         header = payload_size.to_bytes(4, byteorder='little')
+        print("PRE HEADER WRITE")
         self.writePipe.write(header)
+        print("POST HEADER WRITE")
         self.writePipe.write(payload)
 
 model_interface = ModelInterface()
