@@ -111,6 +111,7 @@ int CloseInterface(ModelInterface* const interface) {
     }
 
     if (responseSize != 1 || responsePayload[0]) {
+        free(responsePayload);
         printf("CloseInterface: command execution failed\n");
         return -1;
     }
@@ -161,6 +162,7 @@ int GetAction(const ModelInterface* const interface,
     }
 
     if (responseSize != 2 || responsePayload[0]) {
+        free(responsePayload);
         printf("GetAction: command execution failed\n");
         return -1;
     }
@@ -172,18 +174,79 @@ int GetAction(const ModelInterface* const interface,
     return 0;
 }
 
+// Recording an experience for training the model. We are going to use the bellman equation as the objective function
+// Q(s,a) = r(s,a) + max_a' Q(s', a') => regress on (Q(s,a) - (r(s,a) + max_a' Q(s', a')))^2 (squared error)
 int RecordExperience(const ModelInterface* const interface,
     const char* const state, const unsigned int stateSize,
     const char* const nextState, const unsigned int nextStateSize,
-    const unsigned int action, const unsigned int reward) {
-    // Recording an experience for training the model. We are going to use the bellman equation as the objective function
-    // Q(s,a) = r(s,a) + max_a' Q(s', a') => regress on (Q(s,a) - (r(s,a) + max_a' Q(s', a')))^2 (squared error)
+    const unsigned char action, const unsigned int reward) {
+    if (interface == NULL) {
+        printf("RecordExperience: interface must not be NULL\n");
+        return -1;
+    }
+
+    const unsigned int commandPayloadSize = 26 + stateSize + nextStateSize;
+    unsigned char* commandPayload = (unsigned char*)malloc(commandPayloadSize);
+    memcpy(commandPayload, "RecordExperience:", 17);
+    memcpy(commandPayload + 17, &stateSize, 4);
+    memcpy(commandPayload + 21, state, stateSize);
+    memcpy(commandPayload + stateSize + 21, &nextStateSize, 4);
+    memcpy(commandPayload + stateSize + 25, nextState, nextStateSize);
+    memcpy(commandPayload + stateSize + nextStateSize + 25, &action, 1);
+    memcpy(commandPayload + stateSize + nextStateSize + 26, &reward, 4);
+
+    if (SendCommand(interface, commandPayload, commandPayloadSize)) {
+        free(commandPayload);
+        printf("RecordExperience: failed to send command\n");
+        return -1;
+    }
+
+    free(commandPayload);
+
+    unsigned char* responsePayload;
+    unsigned int responseSize;
+    if (ReceiveResponse(interface, &responsePayload, &responseSize) || responsePayload == NULL) {
+        printf("RecordExperience: failed to recieve response\n");
+        return -1;
+    }
+
+    if (responseSize != 1 || responsePayload[0]) {
+        free(responsePayload);
+        printf("RecordExperience: command execution failed\n");
+        return -1;
+    }
+
+    free(responsePayload);
 
     return 0;
 }
 
+// Replay all the experiences from the episode to update the model weights
 int ReplayExperiences(const ModelInterface* const interface) {
-    // Replay all the experiences from the episode to update the model weights
+    if (interface == NULL) {
+        printf("ReplayExperiences: interface must not be NULL\n");
+        return -1;
+    }
+
+    if (SendCommand(interface, "ReplayExperiences:", 18)) {
+        printf("ReplayExperiences: failed to send command\n");
+        return -1;
+    }
+
+    unsigned char* responsePayload;
+    unsigned int responseSize;
+    if (ReceiveResponse(interface, &responsePayload, &responseSize) || responsePayload == NULL) {
+        printf("ReplayExperiences: failed to recieve response\n");
+        return -1;
+    }
+
+    if (responseSize != 1 || responsePayload[0]) {
+        free(responsePayload);
+        printf("ReplayExperiences: command execution failed\n");
+        return -1;
+    }
+
+    free(responsePayload);
 
     return 0;
 }

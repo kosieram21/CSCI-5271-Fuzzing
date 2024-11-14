@@ -52,8 +52,8 @@ while processing:
         print('getting action...')
         state_size = struct.unpack('<I', args[:4])[0]
         state = args[4:].decode('utf-8')
-        print(state_size)
-        print(state)
+        print(f'state size: {state_size}')
+        print(f'state: {state}')
         try:
             error_code = 0
             action = 3  #number corresponding to model output of what action to take
@@ -63,32 +63,5 @@ while processing:
         response_payload = (error_code).to_bytes(1, byteorder='little')
         response_payload += (action).to_bytes(1, byteorder='little')
         model_interface.send_response(response_payload)
+    elif command == "RecordExperience":
 
-
-
-    # if command == 'GenerateMutation':
-    #     print('mutating...')
-    #     output = "abcd1234"
-    #     outputSize = str(len(output)).zfill(10)
-    #     writePipe.write(outputSize)
-    #     writePipe.flush()
-    #     writePipe.write(output)
-    #     writePipe.flush()
-    #     writePipe.write('0')
-    #     writePipe.flush()
-    # elif command == 'UpdateModel':
-    #     print('updating...')
-    #     code_coverage = readPipe.readline()
-    #     print(f'code coverage: {code_coverage}')
-    #     writePipe.write('0')
-    #     writePipe.flush()
-    # elif command == 'Close':
-    #     print('closing...')
-    #     writePipe.write('0')
-    #     writePipe.flush()
-    #     readPipe.close()
-    #     writePipe.close()
-    #     processing = False
-    # else:
-    #     print(f'{command} is an invalid command')
-    #     processing = False
