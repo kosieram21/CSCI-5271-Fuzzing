@@ -13,6 +13,10 @@ int main() {
 
     printf("action: %d\n", action);
 
+    if (RecordExperience(&interface, "test state", 10, "test state2", 11, action, 100)) {
+        return -1;
+    }
+
     if (CloseInterface(&interface)) {
         return -1;
     }

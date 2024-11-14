@@ -185,7 +185,7 @@ int RecordExperience(const ModelInterface* const interface,
         return -1;
     }
 
-    const unsigned int commandPayloadSize = 26 + stateSize + nextStateSize;
+    const unsigned int commandPayloadSize = 30 + stateSize + nextStateSize;
     unsigned char* commandPayload = (unsigned char*)malloc(commandPayloadSize);
     memcpy(commandPayload, "RecordExperience:", 17);
     memcpy(commandPayload + 17, &stateSize, 4);
