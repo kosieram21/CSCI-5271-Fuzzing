@@ -64,17 +64,17 @@ while processing:
         response_payload += (action).to_bytes(1, byteorder='little')
         model_interface.send_response(response_payload)
     elif command == "RecordExperience":
-        print('recording actions')
+        print('recording experience...')
         state_size = struct.unpack('<I', args[:4])[0]
         state = args[4: 4 + state_size].decode('utf-8')
-        print(f'state size: {state_size}')
-        print(f'state: {state}')
         next_state_size = struct.unpack('<I', args[4 + state_size: 8 + state_size])[0]
         next_state = args[8 + state_size: 8 + state_size + next_state_size].decode('utf-8')
+        action = int.from_bytes(args[8 + state_size + next_state_size: 9 + state_size + next_state_size], byteorder='little', signed=False)
+        reward = struct.unpack('<I', args[9 + state_size + next_state_size: 13 + state_size + next_state_size])[0]
+        print(f'state size: {state_size}')
+        print(f'state: {state}')
         print(f'next state size: {next_state_size}')
         print(f'next state: {next_state}')
-        action = args[8 + state_size + next_state_size: 9 + state_size + next_state_size].decode('utf-8')
-        reward = struct.unpack('<I', args[9 + state_size + next_state_size: 13 + state_size + next_state_size])[0]
         print(f'action: {action}')
         print(f'reward: {reward}')
-
+        model_interface.send_response((0).to_bytes(1, byteorder='little'))
