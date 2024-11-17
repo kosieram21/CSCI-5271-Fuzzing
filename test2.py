@@ -2,6 +2,7 @@ import math
 import torch
 import torch.nn as nn
 import random
+import matplotlib.pyplot as plt
 
 class Actor(nn.Module): # policy pi
 	def __init__(self, input_dim, output_dim, embedding_dim, hidden_dim, encoder_layers, decoder_layers):
@@ -72,7 +73,9 @@ class TrainingPipeline:
 			self.critic_optimizer.step()
 
 			predicted_action = self.actor(state)
-			actor_loss = self.critic(state, predicted_action).mean()
+			#print(f'predicted action: {predicted_action}')
+			actor_loss = -self.critic(state, predicted_action)
+			#print(f' actor loss: {actor_loss}')
 			self.actor_optimizer.zero_grad()
 			actor_loss.backward()
 			self.actor_optimizer.step()
@@ -80,10 +83,11 @@ class TrainingPipeline:
 		self.memory.clear()
 
 class ToyEnvironment:
-	def __init__(self, initial_state, temperature):
+	def __init__(self, initial_state, temperature, epsilon):
 		self.initial_state = initial_state
 		self.state = initial_state
 		self.temperature = temperature
+		self.epsilon = epsilon
 
 	def _lerp(self, input, start, end):
 		return math.floor(((end - start) * input) + start)
@@ -142,10 +146,17 @@ class ToyEnvironment:
 		return self.state
 	
 	def step(self, action_embedding):
+		#print(self.state)
 		with torch.no_grad():
-			chosen_action = torch.argmax(torch.softmax(action_embedding[:, :-2] / self.temperature, dim=1)).item()
-			arg1 = torch.sigmoid(action_embedding[:, -2]).item()
-			arg2 = torch.sigmoid(action_embedding[:, -1]).item()
+			chosen_action = torch.multinomial(torch.softmax(action_embedding[:, :-2] / self.temperature, dim=1), num_samples = 1).item()
+			if random.random() < self.epsilon:
+				arg1 = torch.sigmoid(action_embedding[:, -2]).item()
+			else:
+				arg1 = random.uniform(0, 1)
+			if random.random() < self.epsilon:
+				arg2 = torch.sigmoid(action_embedding[:, -1]).item()
+			else:
+				arg2 = random.uniform(0, 1)
 		self._apply_mutation(chosen_action, arg1, arg2)
 		return self.state, self._evaluate_state()
 	
@@ -158,7 +169,6 @@ def run_env(env, policy, device, training_pipeline, train=False, action_horizion
 		with torch.no_grad():
 			action_embedding = policy(state_embedding)
 		next_state, reward = env.step(action_embedding)
-		print(next_state)
 		next_state_embedding = torch.tensor([float(ord(c)) for c in next_state]).unsqueeze(0).unsqueeze(-1).to(device)
 		total_reward = reward
 		reward = torch.tensor(reward).to(device)
@@ -192,8 +202,23 @@ critic = Critic(
 
 training_pipeline = TrainingPipeline(actor, critic)
 
-environment = ToyEnvironment('ju sun njfailsdfhnajsdf, 57821o34r, ahsduaisolfasdbhjre, 473820q abhuaskdf', 2000000000)
+environment = ToyEnvironment('ju sun', 0.5, 0.5)
+reward_lst = []
 
-for i in range(50):
-	final_state, total_reward = run_env(environment, actor, device, training_pipeline, True, 25)
+for i in range(500):
+	final_state, total_reward = run_env(environment, actor, device, training_pipeline, True, 125)
 	print(f'Episode: {i}, Final State: {final_state}, Total Reward: {total_reward}')
+	reward_lst.append(total_reward)
+
+
+test_environment = ToyEnvironment('ju sun', 1, 1)
+
+final_state, total_reward = run_env(test_environment, actor, device, training_pipeline, False, 25)
+print(f'Final State: {final_state}, Total Reward: {total_reward}')
+
+plt.plot(reward_lst, marker='o')  # Add markers for better visualization
+plt.title("Line Chart Example")
+plt.xlabel("Index")
+plt.ylabel("Value")
+plt.grid(True)  # Optional: Add a grid
+plt.show()
