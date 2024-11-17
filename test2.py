@@ -157,8 +157,10 @@ class ToyEnvironment:
 				arg2 = torch.sigmoid(action_embedding[:, -1]).item()
 			else:
 				arg2 = random.uniform(0, 1)
+		initial_reward = self._evaluate_state()
 		self._apply_mutation(chosen_action, arg1, arg2)
-		return self.state, self._evaluate_state()
+		final_reward = self._evaluate_state()
+		return self.state, final_reward - initial_reward
 	
 def run_env(env, policy, device, training_pipeline, train=False, action_horizion=25):
 	next_state = env.reset()
@@ -170,7 +172,7 @@ def run_env(env, policy, device, training_pipeline, train=False, action_horizion
 			action_embedding = policy(state_embedding)
 		next_state, reward = env.step(action_embedding)
 		next_state_embedding = torch.tensor([float(ord(c)) for c in next_state]).unsqueeze(0).unsqueeze(-1).to(device)
-		total_reward = reward
+		total_reward += reward
 		reward = torch.tensor(reward).to(device)
 		if train:
 			training_pipeline.record_experience(state_embedding, next_state_embedding, action_embedding, reward)
@@ -213,12 +215,12 @@ for i in range(500):
 
 test_environment = ToyEnvironment('ju sun', 1, 1)
 
-final_state, total_reward = run_env(test_environment, actor, device, training_pipeline, False, 25)
+final_state, total_reward = run_env(test_environment, actor, device, training_pipeline, False, 125)
 print(f'Final State: {final_state}, Total Reward: {total_reward}')
 
 plt.plot(reward_lst, marker='o')  # Add markers for better visualization
-plt.title("Line Chart Example")
-plt.xlabel("Index")
-plt.ylabel("Value")
+plt.title("Reward Over Time")
+plt.xlabel("Episode")
+plt.ylabel("Reward")
 plt.grid(True)  # Optional: Add a grid
 plt.show()
