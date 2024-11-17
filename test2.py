@@ -73,9 +73,7 @@ class TrainingPipeline:
 			self.critic_optimizer.step()
 
 			predicted_action = self.actor(state)
-			#print(f'predicted action: {predicted_action}')
 			actor_loss = -self.critic(state, predicted_action)
-			#print(f' actor loss: {actor_loss}')
 			self.actor_optimizer.zero_grad()
 			actor_loss.backward()
 			self.actor_optimizer.step()
@@ -83,11 +81,11 @@ class TrainingPipeline:
 		self.memory.clear()
 
 class ToyEnvironment:
-	def __init__(self, initial_state, temperature, epsilon):
+	def __init__(self, initial_state, epsilon, epsilon_decay):
 		self.initial_state = initial_state
 		self.state = initial_state
-		self.temperature = temperature
 		self.epsilon = epsilon
+		self.epsilon_decay = epsilon_decay
 
 	def _lerp(self, input, start, end):
 		return math.floor(((end - start) * input) + start)
@@ -143,17 +141,17 @@ class ToyEnvironment:
 
 	def reset(self):
 		self.state = self.initial_state
+		self.epsilon *= self.epsilon_decay
 		return self.state
 	
 	def step(self, action_embedding):
-		#print(self.state)
 		with torch.no_grad():
-			chosen_action = torch.multinomial(torch.softmax(action_embedding[:, :-2] / self.temperature, dim=1), num_samples = 1).item()
-			if random.random() < self.epsilon:
+			chosen_action = torch.multinomial(torch.softmax(action_embedding[:, :-2] / (self.epsilon + 0.5), dim=1), num_samples = 1).item()
+			if random.random() < (1 - self.epsilon):
 				arg1 = torch.sigmoid(action_embedding[:, -2]).item()
 			else:
 				arg1 = random.uniform(0, 1)
-			if random.random() < self.epsilon:
+			if random.random() < (1 - self.epsilon):
 				arg2 = torch.sigmoid(action_embedding[:, -1]).item()
 			else:
 				arg2 = random.uniform(0, 1)
@@ -204,7 +202,7 @@ critic = Critic(
 
 training_pipeline = TrainingPipeline(actor, critic)
 
-environment = ToyEnvironment('ju sun', 0.5, 0.5)
+environment = ToyEnvironment('ju sun', 1, 0.99)
 reward_lst = []
 
 for i in range(500):
@@ -212,10 +210,7 @@ for i in range(500):
 	print(f'Episode: {i}, Final State: {final_state}, Total Reward: {total_reward}')
 	reward_lst.append(total_reward)
 
-
-test_environment = ToyEnvironment('ju sun', 1, 1)
-
-final_state, total_reward = run_env(test_environment, actor, device, training_pipeline, False, 125)
+final_state, total_reward = run_env(environment, actor, device, training_pipeline, False, 125)
 print(f'Final State: {final_state}, Total Reward: {total_reward}')
 
 plt.plot(reward_lst, marker='o')  # Add markers for better visualization
