@@ -1,45 +1,55 @@
 import math
+import string
 import torch
 import torch.nn as nn
 import random
 import matplotlib.pyplot as plt
 
+class Mlp(nn.Module):
+	def __init__(self, input_dim, output_dim, hidden_dim, num_layers):
+		super(Mlp, self).__init__()
+		dim_list = [input_dim] + [hidden_dim] * num_layers + [output_dim]
+		layers = []
+		for i in range(len(dim_list) - 1):
+			layers.append(nn.Linear(dim_list[i], dim_list[i + 1]))
+			if i < len(dim_list) - 2:
+				layers.append(nn.LayerNorm(dim_list[i + 1]))
+				layers.append(nn.ReLU())
+		self.net = nn.Sequential(*layers)
+
+	def forward(self, x):
+		return self.net(x)
+
 class Actor(nn.Module): # policy pi
 	def __init__(self, input_dim, output_dim, embedding_dim, hidden_dim, encoder_layers, decoder_layers):
 		super(Actor, self).__init__()
 		self.gru = nn.GRU(input_dim, embedding_dim, encoder_layers, batch_first=True)
-		dim_list = [embedding_dim] + [hidden_dim] * decoder_layers + [output_dim]
-		layers = []
-		for i in range(len(dim_list) - 1):
-			layers.append(nn.Linear(dim_list[i], dim_list[i + 1]))
-			if i < len(dim_list) - 2:
-				layers.append(nn.LayerNorm(dim_list[i + 1]))
-				layers.append(nn.ReLU())
-		self.mlp = nn.Sequential(*layers)
+		self.action_decoder = Mlp(embedding_dim, output_dim, hidden_dim, decoder_layers)
+		self.arg1_head = Mlp(output_dim + embedding_dim, 1, hidden_dim, decoder_layers)
+		self.arg2_head = Mlp(output_dim + embedding_dim, 1, hidden_dim, decoder_layers)
 
 	def forward(self, state):
 		embedding, _ = self.gru(state)
 		embedding = embedding[:, -1, :]
-		action = self.mlp(embedding)
-		return action
+		action_embedding = self.action_decoder(embedding)
+		joint_embedding = torch.cat((action_embedding, embedding), dim = 1)
+		arg1_embedding = self.arg1_head(joint_embedding)
+		arg2_embedding = self.arg2_head(joint_embedding)
+		action_distribution = torch.softmax(action_embedding, dim=1)
+		arg1 = torch.sigmoid(arg1_embedding)
+		arg2 = torch.sigmoid(arg2_embedding)
+		return action_distribution, arg1, arg2
 	
 class Critic(nn.Module): # Q function
-	def __init__(self, state_input_dim, action_input_dim, output_dim, embedding_dim, hidden_dim, encoder_layers, decoder_layers):
+	def __init__(self, input_dim, embedding_dim, hidden_dim, encoder_layers, decoder_layers):
 		super(Critic, self).__init__()
-		self.gru = nn.GRU(state_input_dim, embedding_dim, encoder_layers, batch_first=True)
-		dim_list = [embedding_dim + action_input_dim] + [hidden_dim] * decoder_layers + [output_dim]
-		layers = []
-		for i in range(len(dim_list) - 1):
-			layers.append(nn.Linear(dim_list[i], dim_list[i + 1]))
-			if i < len(dim_list) - 2:
-				layers.append(nn.LayerNorm(dim_list[i + 1]))
-				layers.append(nn.ReLU())
-		self.mlp = nn.Sequential(*layers)
+		self.gru = nn.GRU(input_dim, embedding_dim, encoder_layers, batch_first=True)
+		self.mlp = Mlp(embedding_dim + 3, 1, hidden_dim, decoder_layers)
 
-	def forward(self, state, action):
+	def forward(self, state, action, arg1, arg2):
 		embedding, _ = self.gru(state)
 		embedding = embedding[:, -1, :]
-		input = torch.cat((embedding, action), dim=-1)
+		input = torch.cat((embedding, action, arg1, arg2), dim=-1)
 		reward = self.mlp(input)
 		return reward
 	
@@ -53,27 +63,29 @@ class TrainingPipeline:
 		self.criterion = nn.MSELoss()
 		self.gamma = gamma
 
-	def record_experience(self, state, next_state, action, reward):
-		self.memory.append((state, next_state, action, reward))
+	def record_experience(self, state, next_state, action, arg1, arg2, reward):
+		self.memory.append((state, next_state, action, arg1, arg2, reward))
 
 	def replay_experiences(self):
 		if not self.memory:
 			return
 
-		for state, next_state, action, reward in self.memory:
+		for state, next_state, action, arg1, arg2, reward in self.memory:
 			with torch.no_grad():
-				next_action = self.actor(next_state)
-				next_value = self.critic(next_state, next_action)
+				next_action_distribution, next_arg1, next_arg2 = self.actor(next_state)
+				next_action = torch.multinomial(next_action_distribution, num_samples=1)
+				next_value = self.critic(next_state, next_action, next_arg1, next_arg2)
 				target = reward + self.gamma * next_value
 
-			estimated_value = self.critic(state, action)
+			estimated_value = self.critic(state, action, arg1, arg2)
 			critic_loss = self.criterion(estimated_value, target)
 			self.critic_optimizer.zero_grad()
 			critic_loss.backward()
 			self.critic_optimizer.step()
 
-			predicted_action = self.actor(state)
-			actor_loss = -self.critic(state, predicted_action)
+			action_distribution, arg1, arg2 = self.actor(state)
+			action = torch.multinomial(action_distribution, num_samples=1)
+			actor_loss = -self.critic(state, action, arg1, arg2)
 			self.actor_optimizer.zero_grad()
 			actor_loss.backward()
 			self.actor_optimizer.step()
@@ -92,7 +104,7 @@ class ToyEnvironment:
 
 	def _character_change(self, arg1, arg2):
 		character_pos = self._lerp(arg1, 0, len(self.state) - 1)
-		new_character = chr(self._lerp(arg2, 0, 255))
+		new_character = chr(self._lerp(arg2, 65, 122))
 		# jank city
 		state_list = list(self.state)
 		state_list[character_pos] = new_character
@@ -108,12 +120,12 @@ class ToyEnvironment:
 
 	def _insert_before(self, arg1, arg2):
 		character_pos = self._lerp(arg1, 0, len(self.state) - 1)
-		new_character = chr(self._lerp(arg2, 0, 255))
+		new_character = chr(self._lerp(arg2, 65, 122))
 		self.state = self.state[:character_pos] + new_character + self.state[character_pos:]
 
 	def _insert_after(self, arg1, arg2):
 		character_pos = self._lerp(arg1, 0, len(self.state) - 1)
-		new_character = chr(self._lerp(arg2, 0, 255))
+		new_character = chr(self._lerp(arg2, 65, 122))
 		self.state = self.state[:character_pos+1] + new_character + self.state[character_pos+1:]
 
 	def _delete(self, arg1):
@@ -135,30 +147,32 @@ class ToyEnvironment:
 			self._delete(arg1)
 		else:
 			print('we should not be here')
-	
+
 	def _evaluate_state(self):
-		return sum([ord(c) for c in self.state])
+		reward = 0
+		seen = set()
+		for letter in string.ascii_letters:
+			if letter in self.state and letter not in seen:
+				reward += 5
+				seen.add(letter)
+		# if len(self.state) > 0 and self.state[0] == '[':
+		# 	reward += 1000
+		# reward -= len(self.state)
+		return reward
 
 	def reset(self):
 		self.state = self.initial_state
 		self.epsilon *= self.epsilon_decay
 		return self.state
 	
-	def step(self, action_embedding):
-		with torch.no_grad():
-			chosen_action = torch.multinomial(torch.softmax(action_embedding[:, :-2] / (self.epsilon + 0.5), dim=1), num_samples = 1).item()
-			if random.random() < (1 - self.epsilon):
-				arg1 = torch.sigmoid(action_embedding[:, -2]).item()
-			else:
-				arg1 = random.uniform(0, 1)
-			if random.random() < (1 - self.epsilon):
-				arg2 = torch.sigmoid(action_embedding[:, -1]).item()
-			else:
-				arg2 = random.uniform(0, 1)
+	def step(self, action, arg1, arg2):
+		chosen_action = action if random.random() < (1 - self.epsilon) else random.randint(0, 4)
+		arg1 = arg1 if random.random() < (1 - self.epsilon) else random.uniform(0, 1)
+		arg2 = arg2 if random.random() < (1 - self.epsilon) else random.uniform(0, 1)
 		initial_reward = self._evaluate_state()
 		self._apply_mutation(chosen_action, arg1, arg2)
 		final_reward = self._evaluate_state()
-		return self.state, final_reward - initial_reward
+		return chosen_action, arg1, arg2, self.state, final_reward - initial_reward
 	
 def run_env(env, policy, device, training_pipeline, train=False, action_horizion=25):
 	next_state = env.reset()
@@ -167,13 +181,17 @@ def run_env(env, policy, device, training_pipeline, train=False, action_horizion
 	for _ in range(action_horizion):
 		state_embedding = torch.tensor([float(ord(c)) for c in next_state]).unsqueeze(0).unsqueeze(-1).to(device)
 		with torch.no_grad():
-			action_embedding = policy(state_embedding)
-		next_state, reward = env.step(action_embedding)
+			action_distribution, arg1, arg2 = policy(state_embedding)
+			action = torch.multinomial(action_distribution, num_samples=1)
+		action, arg1, arg2, next_state, reward = env.step(action.item(), arg1.item(), arg2.item())
 		next_state_embedding = torch.tensor([float(ord(c)) for c in next_state]).unsqueeze(0).unsqueeze(-1).to(device)
 		total_reward += reward
 		reward = torch.tensor(reward).to(device)
+		action = torch.tensor(action).unsqueeze(0).unsqueeze(-1).to(device)
+		arg1 = torch.tensor(arg1).unsqueeze(0).unsqueeze(-1).to(device)
+		arg2 = torch.tensor(arg2).unsqueeze(0).unsqueeze(-1).to(device)
 		if train:
-			training_pipeline.record_experience(state_embedding, next_state_embedding, action_embedding, reward)
+			training_pipeline.record_experience(state_embedding, next_state_embedding, action, arg1, arg2, reward)
 
 	if train:
 		training_pipeline.replay_experiences()
@@ -185,16 +203,14 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 actor = Actor(
 	input_dim=1,
-	output_dim=7,
+	output_dim=5,
 	embedding_dim=16,
 	hidden_dim=32,
 	encoder_layers=4,
 	decoder_layers=4).to(device)
 
 critic = Critic(
-	state_input_dim=1,
-	action_input_dim=7,
-	output_dim=1,
+	input_dim=1,
 	embedding_dim=16,
 	hidden_dim=32,
 	encoder_layers=4,
@@ -202,20 +218,23 @@ critic = Critic(
 
 training_pipeline = TrainingPipeline(actor, critic)
 
-environment = ToyEnvironment('ju sun', 1, 0.99)
+environment = ToyEnvironment('seed', 1, 0.99)
 reward_lst = []
 
-for i in range(500):
-	final_state, total_reward = run_env(environment, actor, device, training_pipeline, True, 125)
-	print(f'Episode: {i}, Final State: {final_state}, Total Reward: {total_reward}')
+num_steps = 125
+num_episodes = 500
+
+for i in range(num_episodes):
+	final_state, total_reward = run_env(environment, actor, device, training_pipeline, True, num_steps)
+	print(f'Episode: {i}, Final State: {final_state}, Total Reward: {total_reward}, Code Coverage: {environment._evaluate_state()}')
 	reward_lst.append(total_reward)
 
-final_state, total_reward = run_env(environment, actor, device, training_pipeline, False, 125)
+final_state, total_reward = run_env(environment, actor, device, training_pipeline, False, num_steps)
 print(f'Final State: {final_state}, Total Reward: {total_reward}')
 
-plt.plot(reward_lst, marker='o')  # Add markers for better visualization
+plt.plot(reward_lst, marker='o')
 plt.title("Reward Over Time")
 plt.xlabel("Episode")
 plt.ylabel("Reward")
-plt.grid(True)  # Optional: Add a grid
+plt.grid(True)
 plt.show()
