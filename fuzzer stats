@@ -1,0 +1,30 @@
+start_time        : 1733274171
+last_update       : 1733342481
+fuzzer_pid        : 107
+cycles_done       : 28
+execs_done        : 46931974
+execs_per_sec     : 26.31
+paths_total       : 914
+paths_favored     : 114
+paths_found       : 910
+paths_imported    : 0
+max_depth         : 16
+cur_path          : 860
+pending_favs      : 0
+pending_total     : 38
+variable_paths    : 18
+stability         : 99.23%
+bitmap_cvg        : 3.15%
+unique_crashes    : 0
+unique_hangs      : 0
+last_path         : 1733339644
+last_crash        : 0
+last_hang         : 0
+execs_since_crash : 46931974
+exec_timeout      : 20
+afl_banner        : libpng_read_fuzzer
+afl_version       : 2.57b
+target_mode       : persistent 
+command_line      : /magma/fuzzers/afl/repo/afl-fuzz -m 100M -i /magma/targets/libpng/corpus/libpng_read_fuzzer -o /magma_shared/findings -- /magma_out/libpng_read_fuzzer
+slowest_exec_ms   : 20
+peak_rss_mb       : not available while afl is running
