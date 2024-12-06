@@ -14,6 +14,8 @@ from ppo_fuzzing_model import Agent
 from ppo_fuzzing_model import create_one_hot
 import subprocess
 import time
+import mmap
+import struct
 
 def get_per_seed_coverage(input_buf):
     """Get coverage signal for the current input buffer using afl-showmap."""
@@ -35,7 +37,24 @@ def get_per_seed_coverage(input_buf):
 
     return edges
 
+def get_coverage_from_shm():
+    shm_id = 69
+    map_size = 65536
+    # if not shm_id:
+    #     raise EnvironmentError("AFL_SHM_ENV is not set. Are you running under AFL++?")
+    shm_fd = os.open(f"/dev/shm/afl_shm_{shm_id}", os.O_RDONLY)
+
+    with mmap.mmap(shm_fd, map_size, mmap.MAP_SHARED, mmap.PROT_READ) as mm:
+        trace_bits = mm[:map_size]
+
+        code_coverage = sum(1 for byte in trace_bits if byte != 0)
+    
+    os.close(shm_fd)
+
+    return code_coverage
+
 rl_model = None
+code_coverage = 0
 
 def _lerp(input, start, end):
     return math.floor(((end - start) * input) + start)
@@ -75,13 +94,15 @@ def init(seed):
         pass
     with open("python_file.txt", 'a') as file:
         file.write('You made it to init\n')
-    with open('base_seed.txt', 'r') as file:
-        base_seed = file.readline()
-    with open("input/seed.txt", 'w') as f: #remove all other inputs from the queue and replace with the mutated buffer.
+    with open('base_seed.pdf', 'rb') as file:
+        base_seed = file.read()
+    with open("input/Image1.pdf", 'wb') as f: #remove all other inputs from the queue and replace with the mutated buffer.
         f.write(base_seed)
     
     
-    global rl_model, device
+    global rl_model, device, code_coverage
+
+    code_coverage = 0
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -99,7 +120,7 @@ def init(seed):
               gamma=0.99,lamda=0.95, 
               adam_lr=alpha)
     
-    if os.path.exists("/tmp/actor"):
+    if os.path.exists("/tmp/actor.pt"):
         rl_model.load_models()
 
     return 0
@@ -111,7 +132,7 @@ def fuzz(buf, add_buf, max_len):
     with open("python_file.txt", 'ab') as file:
         file.write(buf)
     
-    global rl_model, device
+    global rl_model, device, code_coverage
 
     current_state = torch.tensor([create_one_hot(char, 0, 255) for char in buf]).unsqueeze(0).to(device)
     action, prob, val = rl_model.choose_action(current_state)
@@ -123,13 +144,18 @@ def fuzz(buf, add_buf, max_len):
     
     buf = _apply_mutation(buf, max_len, choosen_action, arg1_val, arg2_val)
     
-    code_coverage = get_per_seed_coverage(buf)
+    #code_coverage = get_coverage_from_shm()
+    code_coverage_seed = get_per_seed_coverage(buf)
+    with open("code_coverage.txt", 'a') as file:
+        file.write(f'Seed: {str(buf)} Code Coverage: {code_coverage_seed}')
+    
+    code_coverage = code_coverage_seed - code_coverage
     #code_coverage = 0
 
     rl_model.store_data(current_state, action, prob, val, code_coverage, False)
     with open("python_file.txt", 'ab') as file:
         file.write(buf)
-    with open("input/seed.txt", 'wb') as f: #remove all other inputs from the queue and replace with the mutated buffer.
+    with open("input/Image1.pdf", 'wb') as f: #remove all other inputs from the queue and replace with the mutated buffer.
         f.write(buf)
 
     return buf[:max_len]
